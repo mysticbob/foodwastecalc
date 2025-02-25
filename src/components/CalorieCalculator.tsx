@@ -736,7 +736,8 @@ const CalorieCalculator: React.FC = () => {
         COST_FACTORS.prepStyle[shoppingPrefs.prepStyle] *
         COST_FACTORS.storeType[shoppingPrefs.storeType];
       
-      const wastedCost = baseWastedCost * prefMultiplier * regionalMultiplier;
+      // Multiply waste cost by 2 to account for both the wasted meal AND the replacement meal
+      const wastedCost = baseWastedCost * prefMultiplier * regionalMultiplier * 2;
 
       setHouseholdResults({
         totalCalories: totals.totalCalories,
@@ -787,7 +788,8 @@ const CalorieCalculator: React.FC = () => {
         COST_FACTORS.prepStyle[shoppingPrefs.prepStyle] *
         COST_FACTORS.storeType[shoppingPrefs.storeType];
       
-      const wastedCost = baseWastedCost * prefMultiplier * regionalMultiplier;
+      // Multiply waste cost by 2 to account for both the wasted meal AND the replacement meal
+      const wastedCost = baseWastedCost * prefMultiplier * regionalMultiplier * 2;
       
       // Update results immediately
       setHouseholdResults({
