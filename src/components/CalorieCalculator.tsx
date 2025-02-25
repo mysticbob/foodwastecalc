@@ -50,6 +50,7 @@ type UnitSystem = 'imperial' | 'metric';
 type CostTier = 'budget' | 'moderate' | 'premium';
 type PrepStyle = 'mostly_home' | 'mixed' | 'mostly_prepared';
 type StoreType = 'discount' | 'standard' | 'premium';
+type FoodWasteLevel = 'low' | 'average' | 'high';
 
 interface ActivityMultipliers {
   [key: string]: number;
@@ -70,6 +71,7 @@ interface ShoppingPreferences {
   costTier: CostTier;
   prepStyle: PrepStyle;
   storeType: StoreType;
+  wasteLevel: FoodWasteLevel;
 }
 
 interface HouseholdConfig {
@@ -268,7 +270,8 @@ const CalorieCalculator: React.FC = () => {
   const [shoppingPrefs, setShoppingPrefs] = useState<ShoppingPreferences>({
     costTier: 'moderate',
     prepStyle: 'mixed',
-    storeType: 'standard'
+    storeType: 'standard',
+    wasteLevel: 'average'
   });
   const [zipCode, setZipCode] = useState<string>(DEFAULT_VALUES.zipCode);
   const [mealsOutPerWeek, setMealsOutPerWeek] = useState<number>(1);
@@ -705,6 +708,13 @@ const CalorieCalculator: React.FC = () => {
     };
   };
 
+  // Add waste percentage mapping
+  const WASTE_PERCENTAGES = {
+    low: 0.05,      // 5% - hardly any
+    average: 0.20,  // 20% - average
+    high: 0.35      // 35% - lots
+  };
+
   // Calculate household totals
   useEffect(() => {
     if (people.length > 0) {
@@ -722,33 +732,26 @@ const CalorieCalculator: React.FC = () => {
         totalDailyCost: acc.totalDailyCost + person.dailyCost,
       }), { totalCalories: 0, totalDailyCost: 0 });
 
-      // Calculate leftover waste
-      // Assuming an average leftover is about 1/6 of a day's food for one person
-      const avgDailyCaloriesPerPerson = totals.totalCalories / people.length;
-      const caloriesPerLeftover = avgDailyCaloriesPerPerson / 6;
-      const wastedCalories = leftoversWasted * caloriesPerLeftover;
+      // Calculate monthly cost first
+      const totalMonthlyCost = totals.totalDailyCost * 30;
       
-      // Cost based on same multipliers as regular food
-      const baseWastedCost = wastedCalories * 0.0025; // Base cost per calorie
-      const regionalMultiplier = getRegionalMultiplier(zipCode);
-      const prefMultiplier = 
-        COST_FACTORS.costTier[shoppingPrefs.costTier] *
-        COST_FACTORS.prepStyle[shoppingPrefs.prepStyle] *
-        COST_FACTORS.storeType[shoppingPrefs.storeType];
+      // Simplified waste calculation - just take the percentage of the total monthly cost
+      const wastePercentage = WASTE_PERCENTAGES[shoppingPrefs.wasteLevel];
+      const wastedCost = totalMonthlyCost * wastePercentage;
       
-      // Multiply waste cost by 2 to account for both the wasted meal AND the replacement meal
-      const wastedCost = baseWastedCost * prefMultiplier * regionalMultiplier * 2;
+      // Calculate wasted calories based on the same percentage
+      const wastedCalories = totals.totalCalories * wastePercentage;
 
       setHouseholdResults({
         totalCalories: totals.totalCalories,
         totalDailyCost: totals.totalDailyCost,
-        totalMonthlyCost: totals.totalDailyCost * 30,
+        totalMonthlyCost: totalMonthlyCost,
         wastedCalories: wastedCalories,
         wastedCost: wastedCost,
         breakdown
       });
     }
-  }, [people, unitSystem, zipCode, shoppingPrefs, leftoversWasted]);
+  }, [people, unitSystem, zipCode, shoppingPrefs]);
 
   // Function to handle processing with delay
   const processWithDelay = () => {
@@ -776,26 +779,21 @@ const CalorieCalculator: React.FC = () => {
         totalDailyCost: acc.totalDailyCost + person.dailyCost,
       }), { totalCalories: 0, totalDailyCost: 0 });
       
-      // Calculate waste
-      const avgDailyCaloriesPerPerson = totals.totalCalories / people.length;
-      const caloriesPerLeftover = avgDailyCaloriesPerPerson / 6;
-      const wastedCalories = leftoversWasted * caloriesPerLeftover;
+      // Calculate monthly cost first
+      const totalMonthlyCost = totals.totalDailyCost * 30;
       
-      const baseWastedCost = wastedCalories * 0.0025;
-      const regionalMultiplier = getRegionalMultiplier(zipCode);
-      const prefMultiplier = 
-        COST_FACTORS.costTier[shoppingPrefs.costTier] *
-        COST_FACTORS.prepStyle[shoppingPrefs.prepStyle] *
-        COST_FACTORS.storeType[shoppingPrefs.storeType];
+      // Simplified waste calculation - just take the percentage of the total monthly cost
+      const wastePercentage = WASTE_PERCENTAGES[shoppingPrefs.wasteLevel];
+      const wastedCost = totalMonthlyCost * wastePercentage;
       
-      // Multiply waste cost by 2 to account for both the wasted meal AND the replacement meal
-      const wastedCost = baseWastedCost * prefMultiplier * regionalMultiplier * 2;
+      // Calculate wasted calories based on the same percentage
+      const wastedCalories = totals.totalCalories * wastePercentage;
       
       // Update results immediately
       setHouseholdResults({
         totalCalories: totals.totalCalories,
         totalDailyCost: totals.totalDailyCost,
-        totalMonthlyCost: totals.totalDailyCost * 30,
+        totalMonthlyCost: totalMonthlyCost,
         wastedCalories: wastedCalories,
         wastedCost: wastedCost,
         breakdown
@@ -840,75 +838,61 @@ const CalorieCalculator: React.FC = () => {
       <VStack spacing={6} align="stretch">
         {/* Logo and Title (if any) */}
         
-        {/* 1. Household Configuration - Updated to add zip code */}
-        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-          <FormControl>
-            <FormLabel>Adults in Household</FormLabel>
-            <NumberInput
-              min={1}
-              max={4}
-              value={household.adults}
-              onChange={(_, valueAsNumber) => 
-                setHousehold(prev => ({ ...prev, adults: valueAsNumber || 1 }))
-              }
-            >
-              <NumberInputField />
-              <NumberInputStepper>
-                <NumberIncrementStepper />
-                <NumberDecrementStepper />
-              </NumberInputStepper>
-            </NumberInput>
-          </FormControl>
+        {/* 1. Household Configuration - Updated with header and simplified controls */}
+        <Box>
+          <Text fontSize="xl" fontWeight="bold" mb={4} color="ovie.700">
+            Household
+          </Text>
+          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
+            <FormControl>
+              <FormLabel>Adults</FormLabel>
+              <NumberInput
+                min={1}
+                max={4}
+                value={household.adults}
+                onChange={(_, valueAsNumber) => 
+                  setHousehold(prev => ({ ...prev, adults: valueAsNumber || 1 }))
+                }
+              >
+                <NumberInputField />
+                <NumberInputStepper>
+                  <NumberIncrementStepper />
+                  <NumberDecrementStepper />
+                </NumberInputStepper>
+              </NumberInput>
+            </FormControl>
 
-          <FormControl>
-            <FormLabel>Children in Household</FormLabel>
-            <NumberInput
-              min={0}
-              max={6}
-              value={household.children}
-              onChange={(_, valueAsNumber) => 
-                setHousehold(prev => ({ ...prev, children: valueAsNumber || 0 }))
-              }
-            >
-              <NumberInputField />
-              <NumberInputStepper>
-                <NumberIncrementStepper />
-                <NumberDecrementStepper />
-              </NumberInputStepper>
-            </NumberInput>
-          </FormControl>
-          
-          <FormControl>
-            <FormLabel>Leftover Meals Tossed (per month)</FormLabel>
-            <NumberInput
-              min={0}
-              max={50}
-              value={leftoversWasted}
-              onChange={(_, valueAsNumber) => 
-                setLeftoversWasted(valueAsNumber || 0)
-              }
-            >
-              <NumberInputField />
-              <NumberInputStepper>
-                <NumberIncrementStepper />
-                <NumberDecrementStepper />
-              </NumberInputStepper>
-            </NumberInput>
-          </FormControl>
-          
-          <FormControl>
-            <FormLabel>ZIP Code</FormLabel>
-            <Input
-              type="text"
-              value={zipCode}
-              onChange={(e) => handleZipCodeChange(e.target.value)}
-              placeholder="Enter ZIP code"
-              maxLength={5}
-              pattern="[0-9]*"
-            />
-            <FormHelperText>Used for regional cost estimates</FormHelperText>
-          </FormControl>
-        </SimpleGrid>
+            <FormControl>
+              <FormLabel>Children</FormLabel>
+              <NumberInput
+                min={0}
+                max={6}
+                value={household.children}
+                onChange={(_, valueAsNumber) => 
+                  setHousehold(prev => ({ ...prev, children: valueAsNumber || 0 }))
+                }
+              >
+                <NumberInputField />
+                <NumberInputStepper>
+                  <NumberIncrementStepper />
+                  <NumberDecrementStepper />
+                </NumberInputStepper>
+              </NumberInput>
+            </FormControl>
+            
+            <FormControl>
+              <FormLabel>Zip</FormLabel>
+              <Input
+                type="text"
+                value={zipCode}
+                onChange={(e) => handleZipCodeChange(e.target.value)}
+                placeholder="Enter ZIP code"
+                maxLength={5}
+                pattern="[0-9]*"
+              />
+            </FormControl>
+          </SimpleGrid>
+        </Box>
 
         {/* Email subscription box - moved here from results section */}
         <Box p={3} bg="blue.50" borderRadius="md" borderLeft="4px" borderColor="blue.400">
@@ -1105,7 +1089,7 @@ const CalorieCalculator: React.FC = () => {
               </Box>
               
               {/* Add the simplified Leftover Waste section */}
-              {leftoversWasted > 0 && (
+              {householdResults.wastedCalories > 0 && (
                 <Box 
                   mt={2} 
                   p={3} 
@@ -1166,7 +1150,7 @@ const CalorieCalculator: React.FC = () => {
                   border="1px" 
                   borderColor="gray.200"
                 >
-                  <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
+                  <SimpleGrid columns={{ base: 1, md: 4 }} spacing={4}>
                     <FormControl>
                       <FormLabel>Budget Level</FormLabel>
                       <RadioGroup
@@ -1208,6 +1192,20 @@ const CalorieCalculator: React.FC = () => {
                         </Stack>
                       </RadioGroup>
                     </FormControl>
+                    
+                    <FormControl>
+                      <FormLabel>How Much Food Do You Toss?</FormLabel>
+                      <RadioGroup
+                        value={shoppingPrefs.wasteLevel}
+                        onChange={(value) => handlePreferenceChange('wasteLevel', value)}
+                      >
+                        <Stack spacing={2}>
+                          <Radio value="low">Some</Radio>
+                          <Radio value="average">Average</Radio>
+                          <Radio value="high">Lots</Radio>
+                        </Stack>
+                      </RadioGroup>
+                    </FormControl>
                   </SimpleGrid>
                 </Box>
               </Collapse>
@@ -1219,4 +1217,4 @@ const CalorieCalculator: React.FC = () => {
   );
 };
 
-export default CalorieCalculator; 
+export default CalorieCalculator;
