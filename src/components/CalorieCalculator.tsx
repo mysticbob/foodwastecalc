@@ -578,7 +578,9 @@ const CalorieCalculator: React.FC = () => {
       seasonal: 'winter', // We can make this dynamic later
       regional: `Based on ${costFactors.zipCodeData.metro || 'regional'} prices`,
       regionalMultiplier: adjustments.totalMultiplier,
-      totalMultiplier: adjustments.totalMultiplier
+      totalMultiplier: adjustments.totalMultiplier,
+      mealsOutCost: adjustedDailyCost * 0.4 / 3, // Assuming 40% higher cost for meals out, divided by 3 meals per day
+      mealsInCost: adjustedDailyCost * 0.6 / 3 // Assuming 60% of cost for meals in, divided by 3 meals per day
     });
   };
 
