@@ -1074,54 +1074,51 @@ const CalorieCalculator: React.FC = () => {
           >
             <VStack spacing={4} align="stretch">
               <Box>
-                <Text fontSize="xl" fontWeight="bold" color="ovie.700">
-                  Household Totals
+                <Text fontSize="2xl" fontWeight="bold" color="ovie.700" mb={4}>
+                  Your Household Monthly Meals & Food Costs
                 </Text>
-                <Text fontSize="2xl" fontWeight="bold" color="ovie.700">
-                  {householdResults.totalCalories.toLocaleString()} calories/day
+                
+                <Text fontSize="4xl" fontWeight="bold" color="ovie.700">
+                  ${Math.round(householdResults.totalMonthlyCost)} <Text as="span" fontSize="2xl"> / Month</Text>
                 </Text>
-                <Text fontSize="lg" color="ovie.600">
-                  ${householdResults.totalDailyCost.toFixed(2)}/day
-                </Text>
-                <Text fontSize="md" color="ovie.600">
-                  ${householdResults.totalMonthlyCost.toFixed(2)}/month
+                
+                <Text fontSize="xl" color="ovie.600" mt={2}>
+                  Approximately ${Math.round(householdResults.totalDailyCost)} daily to provide {Math.round(householdResults.totalCalories).toLocaleString()} calories
                 </Text>
               </Box>
               
               {/* Add the simplified Leftover Waste section */}
               {householdResults.wastedCalories > 0 && (
                 <Box 
-                  mt={2} 
-                  p={3} 
+                  mt={4} 
+                  p={5} 
                   bg="red.50" 
                   borderRadius="md" 
                   borderLeft="4px" 
                   borderColor="red.400"
                 >
-                  <Text fontSize="md" fontWeight="bold" color="red.600">
-                    Food Waste
+                  <Text fontSize="xl" fontWeight="medium" color="red.700" mb={2}>
+                    Food Waste Costs <em>or</em> Possible Savings with <Link href="https://ovie.life/collections/smarterware/products/ovie-lighttags-set-of-3" isExternal color="red.700" textDecoration="underline">LightTag</Link>!
                   </Text>
-                  <Text fontSize="md" fontWeight="bold" color="red.600">
-                    ${householdResults.wastedCost.toFixed(2)} thrown away each month
+                  
+                  <Text fontSize="5xl" fontWeight="bold" color="red.600">
+                    ${Math.round(householdResults.wastedCost)} <Text as="span" fontSize="2xl">Food Waste Cost</Text>
                   </Text>
                   
                   {/* Add Ovie Light Tag ROI calculation */}
                   {householdResults.wastedCost > 0 && (
-                    <Box mt={3} pt={3} borderTop="1px dashed" borderColor="red.300">
-                      <Text fontSize="sm" fontWeight="medium" color="red.600">
-                        Investment Recovery
-                      </Text>
+                    <Box mt={4} pt={3} borderTop="1px dashed" borderColor="red.300">
                       {householdResults.wastedCost >= 20 ? (
-                        <Text fontSize="sm" color="red.600">
+                        <Text fontSize="md" color="red.600">
                           One Ovie <Link href="https://ovie.life/collections/smarterware/products/ovie-lighttags-set-of-3" isExternal color="red.700" textDecoration="underline">Light Tag</Link> ($20) would pay for itself in less than a month!
                         </Text>
                       ) : (
-                        <Text fontSize="sm" color="red.600">
-                          A <Link href="https://ovie.life/collections/smarterware/products/ovie-lighttags-set-of-3" isExternal color="red.700" textDecoration="underline">LightTag</Link> would pay for itself in less than {Math.ceil(20 / householdResults.wastedCost)} months
+                        <Text fontSize="md" color="red.600">
+                          A <Link href="https://ovie.life/collections/smarterware/products/ovie-lighttags-set-of-3" isExternal color="red.700" textDecoration="underline">LightTag</Link> would pay for itself in less than {Math.ceil(20 / householdResults.wastedCost)} months.
                         </Text>
                       )}
-                      <Text fontSize="sm" color="red.600" mt={1}>
-                        A pack of 6 <Link href="https://ovie.life/collections/smarterware/products/ovie-lighttags-set-of-3" isExternal color="red.700" textDecoration="underline">LightTags</Link> would help you track more leftovers and save even more!
+                      <Text fontSize="md" color="red.600" mt={1}>
+                        A pack of 6 <Link href="https://ovie.life/collections/smarterware/products/ovie-lighttags-set-of-6" isExternal color="red.700" textDecoration="underline">LightTags</Link> would help you track more leftovers and save even more!
                       </Text>
                     </Box>
                   )}
@@ -1200,9 +1197,9 @@ const CalorieCalculator: React.FC = () => {
                         onChange={(value) => handlePreferenceChange('wasteLevel', value)}
                       >
                         <Stack spacing={2}>
-                          <Radio value="low">Some</Radio>
-                          <Radio value="average">Average</Radio>
-                          <Radio value="high">Lots</Radio>
+                          <Radio value="low">Hardly Any (5%)</Radio>
+                          <Radio value="average">Average (20%)</Radio>
+                          <Radio value="high">Lots (35%)</Radio>
                         </Stack>
                       </RadioGroup>
                     </FormControl>
