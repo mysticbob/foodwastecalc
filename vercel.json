@@ -1,0 +1,7 @@
+{
+  "framework": "vite",
+  "buildCommand": "npx vite build",
+  "devCommand": "npm run dev",
+  "outputDirectory": "dist",
+  "public": true
+} 
