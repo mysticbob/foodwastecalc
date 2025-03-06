@@ -1,6 +1,7 @@
 import React from 'react';
 import { Container, Heading, Image, VStack } from '@chakra-ui/react';
 import CalorieCalculator from './components/CalorieCalculator';
+import { Analytics } from "@vercel/analytics/react";
 
 const App: React.FC = () => {
   return (
@@ -17,6 +18,7 @@ const App: React.FC = () => {
         </Heading>
         <CalorieCalculator />
       </VStack>
+      <Analytics />
     </Container>
   );
 };

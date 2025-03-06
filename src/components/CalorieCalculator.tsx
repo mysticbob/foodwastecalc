@@ -37,6 +37,7 @@ import {
   ModalBody,
   Spinner,
   Link,
+  FormErrorMessage,
 } from '@chakra-ui/react';
 import { calculateCostAdjustment, type CostAdjustmentResult } from '../utils/costAdjustment';
 import { RepeatIcon, ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons';
@@ -293,6 +294,7 @@ const CalorieCalculator: React.FC = () => {
   } | null>(null);
   const [leftoversWasted, setLeftoversWasted] = useState<number>(3);
   const [email, setEmail] = useState<string>('');
+  const [emailError, setEmailError] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [resultsReady, setResultsReady] = useState<boolean>(false);
@@ -819,6 +821,42 @@ const CalorieCalculator: React.FC = () => {
     console.log('Email submitted:', email);
   };
 
+  // Add email validation function
+  const validateEmail = (email: string): boolean => {
+    // Reset error message
+    setEmailError('');
+    
+    // Check if email is empty
+    if (!email.trim()) {
+      setEmailError('Email is required');
+      return false;
+    }
+    
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setEmailError('Please enter a valid email address');
+      return false;
+    }
+    
+    // More rigorous validation
+    const stricterEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!stricterEmailRegex.test(email)) {
+      setEmailError('Please enter a valid email address');
+      return false;
+    }
+    
+    // Check for common disposable email domains (optional, can be expanded)
+    const disposableDomains = ['tempmail.com', 'throwawaymail.com', 'mailinator.com', 'tempinbox.com', 'yopmail.com'];
+    const emailDomain = email.split('@')[1];
+    if (disposableDomains.includes(emailDomain)) {
+      setEmailError('Please use a non-temporary email address');
+      return false;
+    }
+    
+    return true;
+  };
+
   return (
     <Box bg="white" p={6} borderRadius="lg" boxShadow="md">
       {/* Modal for "Cooking..." message */}
@@ -897,171 +935,61 @@ const CalorieCalculator: React.FC = () => {
         {/* Email subscription box - moved here from results section */}
         <Box p={3} bg="blue.50" borderRadius="md" borderLeft="4px" borderColor="blue.400">
           <Text fontSize="md" mb={2}>
-            Enter email for your results. Presented below and emailed with food waste mitigation tips.
+            Please enter your email to receive your results and a coupon for 20% off your first order.
           </Text>
-          <Flex>
-            <Input 
-              placeholder="Your email address" 
-              bg="white"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              mr={2}
-              isDisabled={isLoading}
-            />
-            <Button 
-              colorScheme="blue"
-              onClick={() => {
-                // Handle submission
-                if (email) {
-                  processWithDelay();
-                } else {
-                  toast({
-                    title: "Email required",
-                    description: "Please enter your email address.",
-                    status: "warning",
-                    duration: 3000,
-                    isClosable: true,
-                  });
-                }
-              }}
-              isLoading={isLoading}
-              loadingText="Submitting"
-              isDisabled={isLoading}
-            >
-              Submit
-            </Button>
-          </Flex>
-        </Box>
-
-        {/* 2. Customize People Section - Only show if email is entered and results are ready */}
-        {resultsReady && (
-          <Box>
-            <Button
-              onClick={() => setIsCustomizePeopleOpen(!isCustomizePeopleOpen)}
-              variant="ghost"
-              width="full"
-              rightIcon={isCustomizePeopleOpen ? <ChevronUpIcon /> : <ChevronDownIcon />}
-              color="ovie.600"
-              _hover={{ bg: 'ovie.50' }}
-            >
-              Customize People
-            </Button>
-            
-            <Collapse in={isCustomizePeopleOpen} animateOpacity>
-              <Box 
-                p={4} 
-                mt={2}
-                bg="gray.50" 
-                borderRadius="md" 
-                border="1px" 
-                borderColor="gray.200"
+          <FormControl isInvalid={!!emailError}>
+            <Flex>
+              <Input 
+                placeholder="Your email address" 
+                bg="white"
+                type="email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  // Clear errors when user starts typing
+                  if (emailError) setEmailError('');
+                }}
+                mr={2}
+                isDisabled={isLoading}
+                onBlur={() => {
+                  // Validate on blur for better user experience
+                  if (email) validateEmail(email);
+                }}
+                _invalid={{
+                  borderColor: "red.300",
+                  boxShadow: "0 0 0 1px red.300"
+                }}
+                sx={{
+                  "&:-webkit-autofill": {
+                    WebkitBoxShadow: "0 0 0 1000px white inset",
+                    WebkitTextFillColor: "black"
+                  },
+                  "&:-webkit-autofill:focus": {
+                    WebkitBoxShadow: "0 0 0 1000px white inset",
+                    WebkitTextFillColor: "black"
+                  }
+                }}
+              />
+              <Button 
+                colorScheme="blue"
+                onClick={() => {
+                  // Validate email before proceeding
+                  if (validateEmail(email)) {
+                    processWithDelay();
+                  }
+                }}
+                isLoading={isLoading}
+                loadingText="Submitting"
+                isDisabled={isLoading}
               >
-                {people.map((person, index) => (
-                  <Box 
-                    key={index}
-                    p={4}
-                    mb={2}
-                    bg="white"
-                    borderRadius="md"
-                    shadow="sm"
-                    width="full"
-                  >
-                    <Text fontWeight="semibold" mb={3}>{person.label}</Text>
-
-                    <SimpleGrid columns={{ base: 1, md: 4 }} spacing={4}>
-                      <FormControl>
-                        <FormLabel>Age</FormLabel>
-                        <NumberInput
-                          min={1}
-                          max={120}
-                          value={person.age}
-                          onChange={(valueString) => {
-                            const newPeople = [...people];
-                            newPeople[index].age = parseInt(valueString) || 0;
-                            setPeople(newPeople);
-                          }}
-                        >
-                          <NumberInputField />
-                          <NumberInputStepper>
-                            <NumberIncrementStepper />
-                            <NumberDecrementStepper />
-                          </NumberInputStepper>
-                        </NumberInput>
-                      </FormControl>
-
-                      <FormControl>
-                        <FormLabel>Gender</FormLabel>
-                        <Select
-                          value={person.gender}
-                          onChange={(e) => {
-                            const newPeople = [...people];
-                            newPeople[index].gender = e.target.value as 'male' | 'female';
-                            setPeople(newPeople);
-                          }}
-                        >
-                          <option value="male">Male</option>
-                          <option value="female">Female</option>
-                        </Select>
-                      </FormControl>
-
-                      <FormControl>
-                        <FormLabel>Weight (lbs)</FormLabel>
-                        <NumberInput
-                          min={1}
-                          max={500}
-                          value={person.imperialWeight}
-                          onChange={(valueString) => {
-                            const newPeople = [...people];
-                            const weight = parseInt(valueString) || 0;
-                            newPeople[index].imperialWeight = weight;
-                            newPeople[index].metricWeight = Math.round(weight * 0.453592); // Convert to kg
-                            setPeople(newPeople);
-                          }}
-                        >
-                          <NumberInputField />
-                          <NumberInputStepper>
-                            <NumberIncrementStepper />
-                            <NumberDecrementStepper />
-                          </NumberInputStepper>
-                        </NumberInput>
-                      </FormControl>
-
-                      <FormControl>
-                        <FormLabel>Activity Level</FormLabel>
-                        <Select
-                          value={person.activityLevel}
-                          onChange={(e) => {
-                            const newPeople = [...people];
-                            newPeople[index].activityLevel = e.target.value;
-                            setPeople(newPeople);
-                          }}
-                        >
-                          <option value="sedentary">Sedentary</option>
-                          <option value="light">Light</option>
-                          <option value="moderate">Moderate</option>
-                          <option value="active">High</option>
-                          <option value="veryActive">Extreme</option>
-                        </Select>
-                      </FormControl>
-                    </SimpleGrid>
-
-                    {householdResults && householdResults.breakdown[index] && (
-                      <Box mt={3}>
-                        <Text fontSize="sm">
-                          {householdResults.breakdown[index].calories.toLocaleString()} calories/day
-                        </Text>
-                        <Text fontSize="sm" color="ovie.600">
-                          ${householdResults.breakdown[index].dailyCost.toFixed(2)}/day
-                        </Text>
-                      </Box>
-                    )}
-                  </Box>
-                ))}
-              </Box>
-            </Collapse>
-          </Box>
-        )}
+                Submit
+              </Button>
+            </Flex>
+            {emailError && (
+              <FormErrorMessage ml={2}>{emailError}</FormErrorMessage>
+            )}
+          </FormControl>
+        </Box>
 
         {/* Results Section - Only show if email is entered and results are ready */}
         {resultsReady && householdResults && (
@@ -1118,7 +1046,7 @@ const CalorieCalculator: React.FC = () => {
                         </Text>
                       )}
                       <Text fontSize="md" color="red.600" mt={1}>
-                        A pack of 6 <Link href="https://ovie.life/collections/smarterware/products/ovie-lighttags-set-of-6" isExternal color="red.700" textDecoration="underline">LightTags</Link> would help you track more leftovers and save even more!
+                        A pack of 6 <Link href="https://ovie.life/collections/smarterware/products/ovie-lighttags-set-of-3" isExternal color="red.700" textDecoration="underline">LightTags</Link> would help you track more leftovers and save even more!
                       </Text>
                     </Box>
                   )}
@@ -1126,6 +1054,7 @@ const CalorieCalculator: React.FC = () => {
               )}
             </VStack>
 
+            {/* Combined Customize Section */}
             <Box mt={4}>
               <Button
                 onClick={() => setIsCustomizeOpen(!isCustomizeOpen)}
@@ -1136,7 +1065,7 @@ const CalorieCalculator: React.FC = () => {
                 color="ovie.600"
                 _hover={{ bg: 'ovie.50' }}
               >
-                Customize Cost Estimate
+                Customize Assumptions
               </Button>
               
               <Collapse in={isCustomizeOpen} animateOpacity>
@@ -1147,63 +1076,177 @@ const CalorieCalculator: React.FC = () => {
                   border="1px" 
                   borderColor="gray.200"
                 >
-                  <SimpleGrid columns={{ base: 1, md: 4 }} spacing={4}>
-                    <FormControl>
-                      <FormLabel>Budget Level</FormLabel>
-                      <RadioGroup
-                        value={shoppingPrefs.costTier}
-                        onChange={(value) => handlePreferenceChange('costTier', value)}
+                  {/* Household Members Section */}
+                  <Box mb={6}>
+                    <Text fontSize="lg" fontWeight="bold" mb={4}>
+                      Household Members
+                    </Text>
+                    {people.map((person, index) => (
+                      <Box 
+                        key={index}
+                        p={4}
+                        mb={2}
+                        bg="white"
+                        borderRadius="md"
+                        shadow="sm"
+                        width="full"
                       >
-                        <Stack spacing={2}>
-                          <Radio value="budget">Budget</Radio>
-                          <Radio value="moderate">Moderate</Radio>
-                          <Radio value="premium">Premium</Radio>
-                        </Stack>
-                      </RadioGroup>
-                    </FormControl>
+                        <Text fontWeight="semibold" mb={3}>{person.label}</Text>
 
-                    <FormControl>
-                      <FormLabel>Meal Preparation</FormLabel>
-                      <RadioGroup
-                        value={shoppingPrefs.prepStyle}
-                        onChange={(value) => handlePreferenceChange('prepStyle', value)}
-                      >
-                        <Stack spacing={2}>
-                          <Radio value="mostly_home">Mostly Home-Cooked</Radio>
-                          <Radio value="mixed">Mixed</Radio>
-                          <Radio value="mostly_prepared">Mostly Prepared</Radio>
-                        </Stack>
-                      </RadioGroup>
-                    </FormControl>
+                        <SimpleGrid columns={{ base: 1, md: 4 }} spacing={4}>
+                          <FormControl>
+                            <FormLabel>Age</FormLabel>
+                            <NumberInput
+                              min={1}
+                              max={120}
+                              value={person.age}
+                              onChange={(valueString) => {
+                                const newPeople = [...people];
+                                newPeople[index].age = parseInt(valueString) || 0;
+                                setPeople(newPeople);
+                              }}
+                            >
+                              <NumberInputField />
+                              <NumberInputStepper>
+                                <NumberIncrementStepper />
+                                <NumberDecrementStepper />
+                              </NumberInputStepper>
+                            </NumberInput>
+                          </FormControl>
 
-                    <FormControl>
-                      <FormLabel>Shopping Venues</FormLabel>
-                      <RadioGroup
-                        value={shoppingPrefs.storeType}
-                        onChange={(value) => handlePreferenceChange('storeType', value)}
-                      >
-                        <Stack spacing={2}>
-                          <Radio value="discount">Discount</Radio>
-                          <Radio value="standard">Standard</Radio>
-                          <Radio value="premium">Premium</Radio>
-                        </Stack>
-                      </RadioGroup>
-                    </FormControl>
-                    
-                    <FormControl>
-                      <FormLabel>How Much Food Do You Toss?</FormLabel>
-                      <RadioGroup
-                        value={shoppingPrefs.wasteLevel}
-                        onChange={(value) => handlePreferenceChange('wasteLevel', value)}
-                      >
-                        <Stack spacing={2}>
-                          <Radio value="low">Hardly Any (5%)</Radio>
-                          <Radio value="average">Average (20%)</Radio>
-                          <Radio value="high">Lots (35%)</Radio>
-                        </Stack>
-                      </RadioGroup>
-                    </FormControl>
-                  </SimpleGrid>
+                          <FormControl>
+                            <FormLabel>Gender</FormLabel>
+                            <Select
+                              value={person.gender}
+                              onChange={(e) => {
+                                const newPeople = [...people];
+                                newPeople[index].gender = e.target.value as 'male' | 'female';
+                                setPeople(newPeople);
+                              }}
+                            >
+                              <option value="male">Male</option>
+                              <option value="female">Female</option>
+                            </Select>
+                          </FormControl>
+
+                          <FormControl>
+                            <FormLabel>Weight (lbs)</FormLabel>
+                            <NumberInput
+                              min={1}
+                              max={500}
+                              value={person.imperialWeight}
+                              onChange={(valueString) => {
+                                const newPeople = [...people];
+                                const weight = parseInt(valueString) || 0;
+                                newPeople[index].imperialWeight = weight;
+                                newPeople[index].metricWeight = Math.round(weight * 0.453592);
+                                setPeople(newPeople);
+                              }}
+                            >
+                              <NumberInputField />
+                              <NumberInputStepper>
+                                <NumberIncrementStepper />
+                                <NumberDecrementStepper />
+                              </NumberInputStepper>
+                            </NumberInput>
+                          </FormControl>
+
+                          <FormControl>
+                            <FormLabel>Activity Level</FormLabel>
+                            <Select
+                              value={person.activityLevel}
+                              onChange={(e) => {
+                                const newPeople = [...people];
+                                newPeople[index].activityLevel = e.target.value as ActivityLevel;
+                                setPeople(newPeople);
+                              }}
+                            >
+                              <option value="sedentary">Sedentary</option>
+                              <option value="light">Light</option>
+                              <option value="moderate">Moderate</option>
+                              <option value="active">High</option>
+                              <option value="veryActive">Extreme</option>
+                            </Select>
+                          </FormControl>
+                        </SimpleGrid>
+
+                        {householdResults && householdResults.breakdown[index] && (
+                          <Box mt={3}>
+                            <Text fontSize="sm">
+                              {householdResults.breakdown[index].calories.toLocaleString()} calories/day
+                            </Text>
+                            <Text fontSize="sm" color="ovie.600">
+                              ${householdResults.breakdown[index].dailyCost.toFixed(2)}/day
+                            </Text>
+                          </Box>
+                        )}
+                      </Box>
+                    ))}
+                  </Box>
+
+                  {/* Cost Preferences Section */}
+                  <Box>
+                    <Text fontSize="lg" fontWeight="bold" mb={4}>
+                      Cost Preferences
+                    </Text>
+                    <SimpleGrid columns={{ base: 1, md: 4 }} spacing={4}>
+                      <FormControl>
+                        <FormLabel>Budget Level</FormLabel>
+                        <RadioGroup
+                          value={shoppingPrefs.costTier}
+                          onChange={(value) => handlePreferenceChange('costTier', value)}
+                        >
+                          <Stack spacing={2}>
+                            <Radio value="budget">Budget</Radio>
+                            <Radio value="moderate">Moderate</Radio>
+                            <Radio value="premium">Premium</Radio>
+                          </Stack>
+                        </RadioGroup>
+                      </FormControl>
+
+                      <FormControl>
+                        <FormLabel>Meal Preparation</FormLabel>
+                        <RadioGroup
+                          value={shoppingPrefs.prepStyle}
+                          onChange={(value) => handlePreferenceChange('prepStyle', value)}
+                        >
+                          <Stack spacing={2}>
+                            <Radio value="mostly_home">Mostly Home-Cooked</Radio>
+                            <Radio value="mixed">Mixed</Radio>
+                            <Radio value="mostly_prepared">Mostly Prepared</Radio>
+                          </Stack>
+                        </RadioGroup>
+                      </FormControl>
+
+                      <FormControl>
+                        <FormLabel>Shopping Venues</FormLabel>
+                        <RadioGroup
+                          value={shoppingPrefs.storeType}
+                          onChange={(value) => handlePreferenceChange('storeType', value)}
+                        >
+                          <Stack spacing={2}>
+                            <Radio value="discount">Discount</Radio>
+                            <Radio value="standard">Standard</Radio>
+                            <Radio value="premium">Premium</Radio>
+                          </Stack>
+                        </RadioGroup>
+                      </FormControl>
+                      
+                      <FormControl>
+                        <FormLabel>How Much Food Do You Toss?</FormLabel>
+                        <RadioGroup
+                          value={shoppingPrefs.wasteLevel}
+                          onChange={(value) => handlePreferenceChange('wasteLevel', value)}
+                        >
+                          <Stack spacing={2}>
+                            <Radio value="low">Hardly Any (5%)</Radio>
+                            <Radio value="average">Average (20%)</Radio>
+                            <Radio value="high">Lots (35%)</Radio>
+                          </Stack>
+                        </RadioGroup>
+                      </FormControl>
+                    </SimpleGrid>
+                  </Box>
                 </Box>
               </Collapse>
             </Box>
