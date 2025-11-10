@@ -1,13 +1,4 @@
-// Move the defaults data here
-export interface PersonDefaults {
-  age: number;
-  gender: 'male' | 'female';
-  imperialHeight: string;
-  imperialWeight: number;
-  metricHeight: number;
-  metricWeight: number;
-  activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'veryActive';
-}
+import type { PersonDefaults } from '../types/calculator';
 
 export const DEFAULT_PROFILES: Record<string, PersonDefaults> = {
   'adult-male': {

@@ -59,29 +59,58 @@ const getSeason = (date: Date): keyof SeasonalAdjustment => {
   return 'winter';
 };
 
-// Function to fetch latest price indices from an API
+type ImportMetaWithEnv = ImportMeta & {
+  env?: Record<string, string | undefined>;
+};
+
+const resolveEnv = (): Record<string, string | undefined> | undefined => {
+  if (typeof import.meta === 'undefined') {
+    return undefined;
+  }
+
+  const meta = import.meta as ImportMetaWithEnv;
+  return meta.env;
+};
+
+const VITE_ENV = resolveEnv();
+
+const BLS_PROXY_URL = VITE_ENV?.VITE_BLS_PROXY_URL;
+
+// Function to fetch latest price indices from an API via a secure proxy
 async function fetchLatestPriceIndices(): Promise<void> {
+  if (!BLS_PROXY_URL) {
+    if (typeof console !== 'undefined') {
+      console.warn(
+        'Skipping price index refresh: configure VITE_BLS_PROXY_URL to point to a secure server-side proxy.',
+      );
+    }
+    return;
+  }
+
   try {
-    // In a real implementation, this would fetch from BLS API
-    // You'll need to sign up for a BLS API key: https://www.bls.gov/developers/
-    const response = await fetch('https://api.bls.gov/publicAPI/v2/timeseries/data/', {
+    const response = await fetch(BLS_PROXY_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Registration-Key': 'YOUR_BLS_API_KEY'
       },
       body: JSON.stringify({
         seriesid: ['CUSR0000SAF11', 'CUSR0000SEFV'], // Food at home and Food away from home indices
         startyear: new Date().getFullYear() - 1,
-        endyear: new Date().getFullYear()
-      })
+        endyear: new Date().getFullYear(),
+      }),
     });
 
-    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(`BLS proxy responded with ${response.status}`);
+    }
+
+    await response.json();
     // Update the regionalDatabase with new data
     // Implementation would parse the BLS response and update accordingly
   } catch (error) {
-    console.error('Failed to fetch latest price indices:', error);
+    if (typeof console !== 'undefined' && (VITE_ENV?.MODE ?? 'development') !== 'production') {
+      console.error('Failed to fetch latest price indices:', error);
+    }
   }
 }
 
