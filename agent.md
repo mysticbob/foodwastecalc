@@ -1,14 +1,14 @@
 # Project Overview
 
 - **Name**: `ovie-calculator`
-- **Stack**: Vite 7 + React 18 + TypeScript 5.9 + Chakra UI (v2 custom theme), Vercel analytics.
+- **Stack**: Vite 7 + React 19 + TypeScript 5.9 + Chakra UI (v2 custom theme), Vercel analytics.
 - **Primary Feature**: Household food waste & cost modelling with email-gated results.
 - **Key Modules (post-refactor)**:
   - `src/components/CalorieCalculator.tsx`: lightweight presentation layer composed of reusable sections.
   - `src/hooks/useHouseholdCalculator.ts`: centralised state + side-effect orchestration (inputs, derived results, email workflow).
   - `src/utils/calculator.ts` / `src/utils/people.ts` / `src/utils/region.ts`: pure utilities for calculation logic, default person generation, and location multipliers.
   - `src/constants/calculator.ts` & `src/types/calculator.ts`: shared domain constants/types.
-- `src/utils/costAdjustment.ts`: placeholder for server-backed CPI adjustments (proxy-aware via Infisical-managed secrets).
+  - `src/utils/costAdjustment.ts`: placeholder for server-backed CPI adjustments (proxy-aware via Infisical-managed secrets).
 
 # Architecture Notes
 
@@ -36,10 +36,10 @@
 
 # Dependency Outlook
 
-- **React 19 / React DOM 19**: blocked while Chakra UI v2 peers remain on React 18—upgrade after adopting Chakra UI 3.
-- **Chakra UI 3.x**: major upgrade path with design tokens & component API adjustments; plan migration alongside React upgrade.
-- **Vite 7 / `@vitejs/plugin-react` 5**: introduces improved dev server & SWC defaults; compatible once React upgrade path chosen.
-- **Framer Motion 12**: optional upgrade; verify Chakra UI animation integration first.
+- **React 19 / React DOM 19**: now adopted; Chakra UI v2 peers accept React ≥18 so no breaking changes observed.
+- **Chakra UI 3.x**: major upgrade path with design tokens & component API adjustments; plan migration alongside any further React upgrades.
+- **Vite 7 / `@vitejs/plugin-react` 5**: already in use.
+- **Framer Motion 12**: already in use (compatible with React 18/19).
 
 # Pending / Follow-up Work
 
