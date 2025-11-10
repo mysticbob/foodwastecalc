@@ -1,0 +1,14 @@
+{
+  "projectId": "replace-with-infisical-project-id",
+  "appEnv": {
+    "name": "development",
+    "slug": "development"
+  },
+  "infisicalUrl": "https://app.infisical.com",
+  "secrets": {
+    "VITE_BLS_PROXY_URL": {
+      "path": "/ovie-calculator/development",
+      "comment": "Proxy URL for secure CPI fetches (optional)"
+    }
+  }
+}
